@@ -1,6 +1,6 @@
-const Tag = require("../models/tags");
+const Tag = require("../models/Category");
 
-exports.createTage = async (req, res) => {
+exports.createCategory = async (req, res) => {
   try {
     const { name, description } = req.body;
 
@@ -11,11 +11,11 @@ exports.createTage = async (req, res) => {
       });
     }
 
-    const tagDetails = await Tag.create({
+    const CategoryDetails = await Category.create({
       name: name,
       description: description,
     });
-    console.log(tagDetails);
+    console.log(CategoryDetails);
 
     return res.status(200).json({
       sucess: true,

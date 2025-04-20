@@ -20,7 +20,7 @@ exports.createSubsection = async (req, res) => {
       process.env.FOLDER_NAME
     );
 
-    const subsectionDetails = await SubSection.create({
+    const subSectionDetails = await SubSection.create({
       title: title,
       description: description,
       timeDuration: timeDuration,
@@ -33,7 +33,7 @@ exports.createSubsection = async (req, res) => {
       },
       {
         $push: {
-          subSection: subsectionDetails._id,
+          subSection: subSectionDetails._id,
         },
       },
       { new: true }
@@ -78,7 +78,7 @@ exports.updatedSection = async (res, req) => {
         title: title,
         description: description,
         timeDuration: timeDuration,
-        videoUrl: uploadDetails ? uploadDetails.secure_url : undefined,
+        videoUrl:uploadDetails.secure_url,
       },
       { new: true }
     );
