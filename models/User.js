@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const { resetPasswordToken } = require("../controllers/ResetPassword");
+const { resetPasswordToken } = require("../controllers/resetPassword");
 
 const userSchema = new mongoose.Schema({
   firstName: {
