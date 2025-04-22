@@ -1,6 +1,7 @@
 const Section = require("../models/Section");
 const Course = require("../models/Course");
-  
+const SubSection = require("../models/Subsection");
+
 // create section
 exports.createSection = async (req, res) => {
   try {
@@ -14,7 +15,7 @@ exports.createSection = async (req, res) => {
 
     const newSection = await Section.create({ sectionName });
 
-    const updatedCourseDetails = await Course.findByIdAndUpdate(
+    const updatedCourse = await Course.findByIdAndUpdate(
       courseId,
       {
         $push: {
@@ -22,9 +23,14 @@ exports.createSection = async (req, res) => {
         },
       },
       { new: true }
-    );
-    // HW use populate to replace section /sub-section both in the updatedCourseDetails
-
+    )
+      .populate({
+        path: "courseContent",
+        populate: {
+          path: "subSection",
+        },
+      })
+      .exec();
     return res.status(200).json({
       success: true,
       message: "section created successfully..",
@@ -38,53 +44,80 @@ exports.createSection = async (req, res) => {
     });
   }
 };
- // update section
+// update section
 exports.updateSection = async (req, res) => {
   try {
-    const { sectionName, sectionId } = req.body;
-    if (!sectionName || !sectionId) {
-      return res.status(400).json({
-        success: false,
-        message: "All fields are required",
-      });
-    }
-
-    const updatedSection = await Section.findByIdAndUpdate(
+    const { sectionName, sectionId, courseId } = req.body;
+    const section = await Section.findByIdAndUpdate(
       sectionId,
-      {
-        sectionName,
-      },
+      { sectionName },
       { new: true }
     );
-
-    return res.status(200).json({
+    const course = await Course.findById(courseId)
+      .populate({
+        path: "courseContent",
+        populate: {
+          path: "subSection",
+        },
+      })
+      .exec();
+    console.log(course);
+    res.status(200).json({
       success: true,
-      message: "section updated successfully..",
-      updatedSection,
+      message: section,
+      data: course,
     });
   } catch (error) {
-    console.log(error);
-    return res.status(500).json({
+    console.error("Error updating section:", error);
+    res.status(500).json({
       success: false,
-      message: "something went wrong while updating section..",
+      message: "Internal server error",
+      error: error.message,
     });
   }
 };
- // delete section 
-exports.deleteSection = async(req,res)=>{
-    try{
-        const{sectionId} = req.params;
-         await Section.findByIdAndDelete(sectionId);
-        //  TODO: do we need to delete the entry from the course schema ??
-         return res.status(200).json({
-            success: true,
-            message: "section deleted successfully..",
-         });
-    }catch(error){
-        console.log(error);
-        return res.status(500).json({
-            success: false,
-            message: "something went wrong while deleting section..",
-        });
+
+// DELETE a section
+exports.deleteSection = async (req, res) => {
+  try {
+    const { sectionId, courseId } = req.body;
+    await Course.findByIdAndUpdate(courseId, {
+      $pull: {
+        courseContent: sectionId,
+      },
+    });
+    const section = await Section.findById(sectionId);
+    console.log(sectionId, courseId);
+    if (!section) {
+      return res.status(404).json({
+        success: false,
+        message: "Section not found",
+      });
     }
-}
+    // Delete the associated subsections
+    await SubSection.deleteMany({ _id: { $in: section.subSection } });
+
+    await Section.findByIdAndDelete(sectionId);
+    const course = await Course.findById(courseId)
+      .populate({
+        path: "courseContent",
+        populate: {
+          path: "subSection",
+        },
+      })
+      .exec();
+
+    res.status(200).json({
+      success: true,
+      message: "Section deleted",
+      data: course,
+    });
+  } catch (error) {
+    console.error("Error deleting section:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+};
